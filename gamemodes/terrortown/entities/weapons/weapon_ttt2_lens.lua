@@ -111,8 +111,6 @@ SWEP.Kind = WEAPON_EQUIP2
 SWEP.CanBuy = {} -- no one can buy
 SWEP.notBuyable	= true -- no one can buy
 
-SWEP.AllowDrop = true
-
 -- don't do anything
 function SWEP:PrimaryAttack()
 
@@ -121,6 +119,17 @@ end
 -- don't do anything
 function SWEP:SecondaryAttack()
 
+end
+
+-- disable drop
+SWEP.AllowDrop = false
+
+function SWEP:OnDrop()
+    self:Remove()
+end
+
+function SWEP:ShouldDropOnDie()
+    return false
 end
 
 --------------------
@@ -233,10 +242,6 @@ else
 		if IsValid(vm) then
 			self:ResetBonePositions(vm)
 		end
-	end
-
-	function SWEP:OwnerChanged()
-		self:Holster()
 	end
 
 	function SWEP:OnRemove()
