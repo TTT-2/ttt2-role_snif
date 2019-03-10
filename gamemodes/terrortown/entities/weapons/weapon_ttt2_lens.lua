@@ -174,7 +174,7 @@ if SERVER then
 	function SWEP:Deploy()
 		local owner = self:GetOwner()
 
-		if IsValid(owner) then
+		if IsValid(owner) and owner:Alive() and owner:IsTerror() then
 			owner:EmitSound("ttt2/footsteps.mp3")
 		end
 	end
@@ -216,7 +216,7 @@ else
 	function SWEP:Deploy()
 		local owner = self:GetOwner()
 
-		if not hook_installed and IsValid(owner) and owner == LocalPlayer() then
+		if not hook_installed and IsValid(owner) and owner == LocalPlayer() and owner:Alive() and owner:IsTerror() then
 			hook.Add("PostDrawTranslucentRenderables", "TTT2SnifDrawFootSteps", DrawFootsteps)
 			hook.Add("Think", "TTT2UpdateFootsteps", UpdateFootsteps)
 
