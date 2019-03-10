@@ -1,4 +1,5 @@
 if SERVER then
+	-- materials
 	resource.AddFile("materials/vgui/ttt/dynamic/roles/icon_snif.vmt")
 end
 
@@ -26,7 +27,8 @@ ROLE.conVarData = {
 	creditsTraitorKill = 0,
 	creditsTraitorDead = 1,
 
-	togglable = true
+	togglable = true,
+	shopFallback = SHOP_FALLBACK_DETECTIVE
 }
 
 -- now link this subrole with its baserole
@@ -34,14 +36,14 @@ hook.Add("TTT2BaseRoleInit", "TTT2ConBRDWithSnif", function()
 	SNIFFER:SetBaseRole(ROLE_DETECTIVE)
 end)
 
--- if sync of roles has finished
-hook.Add("TTT2FinishedLoading", "SnifferInitD", function()
-	if CLIENT then
+if CLIENT then
+	-- if sync of roles has finished
+	hook.Add("TTT2FinishedLoading", "SnifferInitD", function()
 		-- setup here is not necessary but if you want to access the role data, you need to start here
 		-- setup basic translation !
 		LANG.AddToLanguage("English", SNIFFER.name, "Sniffer")
 		LANG.AddToLanguage("English", "info_popup_" .. SNIFFER.name, [[You are a Sniffer!
-Try to get some credits!]])
+	Try to get some credits!]])
 		LANG.AddToLanguage("English", "body_found_" .. SNIFFER.abbr, "This was a Sniffer...")
 		LANG.AddToLanguage("English", "search_role_" .. SNIFFER.abbr, "This person was a Sniffer!")
 		LANG.AddToLanguage("English", "target_" .. SNIFFER.name, "Sniffer")
@@ -52,10 +54,18 @@ Try to get some credits!]])
 		-- maybe this language as well...
 		LANG.AddToLanguage("Deutsch", SNIFFER.name, "Sniffer")
 		LANG.AddToLanguage("Deutsch", "info_popup_" .. SNIFFER.name, [[Du bist ein Sniffer!
-Versuche ein paar Credits zu bekommen!]])
+	Versuche ein paar Credits zu bekommen!]])
 		LANG.AddToLanguage("Deutsch", "body_found_" .. SNIFFER.abbr, "Er war ein Sniffer...")
 		LANG.AddToLanguage("Deutsch", "search_role_" .. SNIFFER.abbr, "Diese Person war ein Sniffer!")
 		LANG.AddToLanguage("Deutsch", "target_" .. SNIFFER.name, "Sniffer")
 		LANG.AddToLanguage("Deutsch", "ttt2_desc_" .. SNIFFER.name, [[Der Sniffer ist ein Detektiv (der mit den anderen Detektiv-Rollen zusammenarbeitet)]])
-	end
-end)
+	end)
+else -- SERVER
+	hook.Add("TTT2UpdateSubrole", "TTT2SnifGiveLens", function(ply, old, new)
+		if new == ROLE_SNIFFER then
+			ply:GiveEquipmentWeapon("weapon_ttt2_lens")
+		elseif old == ROLE_SNIFFER then
+			ply:StripWeapon("weapon_ttt2_lens")
+		end
+	end)
+end
