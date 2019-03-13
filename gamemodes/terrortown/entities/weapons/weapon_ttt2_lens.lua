@@ -283,7 +283,7 @@ else
 					p = footstep.pos + footstep.normal * 0.01,
 					n = footstep.normal,
 					f = footstep.foot,
-					h = footSize,
+					h = footstep.size,
 					c = footstep.col,
 					r = footstep.angle,
 					b = footstep.bloody
@@ -389,11 +389,14 @@ else
 		tbl.pos = tr.HitPos
 		tbl.plypos = fpos
 		tbl.foot = foot
+		tbl.size = footSize
 		tbl.curtime = CurTime()
 		tbl.angle = ang.y
 		tbl.normal = tr.HitNormal
 		tbl.col = ply:GetRoleColor()
 		tbl.bloody = bloody
+
+		hook.Run("TTT2SnifferModifyFootstep", ply, tbl)
 
 		footsteps[#footsteps + 1] = tbl
 	end)
@@ -401,10 +404,6 @@ else
 	net.Receive("clearAllFootsteps", function()
 		footsteps = {}
 	end)
-
-	function printFS()
-		PrintTable(footsteps)
-	end
 end
 
 --[[----------------------------------------------------
