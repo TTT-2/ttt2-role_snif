@@ -189,11 +189,20 @@ if SERVER then
 			end
 		end
 
+		local tbl = {
+			p = pos,
+			a = ply:GetForward():Angle(),
+			f = foot == 1,
+			b = inBloodTime
+		}
+
+		hook.Run("TTT2SnifferModifyFootstep", ply, tbl, plys)
+
 		net.Start("addFootstep")
-		net.WriteVector(pos)
-		net.WriteAngle(ply:GetForward():Angle())
-		net.WriteBool(foot == 1)
-		net.WriteBool(inBloodTime)
+		net.WriteVector(tbl.p)
+		net.WriteAngle(tbl.a)
+		net.WriteBool(tbl.f)
+		net.WriteBool(tbl.b)
 		net.WriteEntity(ply)
 		net.Send(plys)
 	end)
