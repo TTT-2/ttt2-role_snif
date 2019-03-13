@@ -237,7 +237,7 @@ if SERVER then
 			attacker.snifferBloody = CurTime()
 			victim.snifferKilled = attacker
 		end
-	end
+	end)
 
 	hook.Add("TTTBodyFound", "TTT2SnifferRegisterBlood", function(finder, deadply)
 		if IsValid(deadply) and deadply.snifferKilled then
