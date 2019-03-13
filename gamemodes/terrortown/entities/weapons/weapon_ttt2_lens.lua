@@ -26,7 +26,13 @@ if SERVER then
 	CreateConVar("ttt2_snif_lens_sound", 1, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 end
 
-util.PrecacheSound("ttt2/footsteps.mp3")
+sound.Add({
+	name = "ttt2_sniffer_haefootsteps",
+	channel = CHAN_STATIC,
+	volume = 1.0,
+	level = 80,
+	sound = "ttt2/footsteps.mp3"
+})
 
 ------------
 -- SWEP data
@@ -260,8 +266,22 @@ if SERVER then
 		if IsValid(owner) and owner:Alive() and owner:IsTerror() then
 			if not GetConVar("ttt2_snif_lens_sound"):GetBool() or math.random(1, 5) ~= 1 then return end
 
-			owner:EmitSound("ttt2/footsteps.mp3")
+			owner:EmitSound("ttt2_sniffer_haefootsteps")
 		end
+
+		return BaseClass.Deploy(self)
+	end
+
+	function SWEP:Holster()
+		if not IsFirstTimePredicted() then return end
+
+		local owner = self:GetOwner()
+
+		if IsValid(owner) then
+			owner:StopSound("ttt2_sniffer_haefootsteps")
+		end
+
+		return BaseClass.Holster(self)
 	end
 else
 	local footbloodMat = Material("vgui/ttt/footblood")
@@ -332,6 +352,8 @@ else
 
 			hook_installed = true
 		end
+
+		return BaseClass.Deploy(self)
 	end
 
 	function SWEP:Holster()
@@ -352,10 +374,8 @@ else
 		if IsValid(vm) then
 			self:ResetBonePositions(vm)
 		end
-	end
 
-	function SWEP:OnRemove()
-		self:Holster()
+		return BaseClass.Holster(self)
 	end
 
 	net.Receive("TTT2SnifferSendKiller", function()
@@ -408,6 +428,12 @@ else
 	net.Receive("clearAllFootsteps", function()
 		footsteps = {}
 	end)
+end
+
+function SWEP:OnRemove()
+	self:Holster()
+
+	BaseClass.OnRemove(self)
 end
 
 --[[----------------------------------------------------
