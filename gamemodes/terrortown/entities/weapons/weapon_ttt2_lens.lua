@@ -22,6 +22,8 @@ if SERVER then
 	util.AddNetworkString("addFootstep")
 	util.AddNetworkString("clearAllFootsteps")
 	util.AddNetworkString("TTT2SnifferSendKiller")
+
+	CreateConVar("ttt2_snif_lens_sound", 1, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 end
 
 util.PrecacheSound("ttt2/footsteps.mp3")
@@ -256,6 +258,8 @@ if SERVER then
 		local owner = self:GetOwner()
 
 		if IsValid(owner) and owner:Alive() and owner:IsTerror() then
+			if not GetConVar("ttt2_snif_lens_sound"):GetBool() or math.random(1, 5) ~= 1 then return end
+
 			owner:EmitSound("ttt2/footsteps.mp3")
 		end
 	end
