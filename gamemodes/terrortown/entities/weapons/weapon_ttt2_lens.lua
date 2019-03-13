@@ -10,6 +10,7 @@ if SERVER then
 	-- materials
 	resource.AddFile("materials/models/magni/magni_sheet.vmt")
 	resource.AddFile("materials/vgui/ttt/footstep.vmt")
+	resource.AddFile("materials/vgui/ttt/footblood.vmt")
 
 	-- models
 	resource.AddFile("models/magni/magniglass.mdl")
@@ -20,6 +21,7 @@ if SERVER then
 
 	util.AddNetworkString("addFootstep")
 	util.AddNetworkString("clearAllFootsteps")
+	util.AddNetworkString("TTT2SnifferSendKiller")
 end
 
 util.PrecacheSound("ttt2/footsteps.mp3")
@@ -142,6 +144,29 @@ function plymeta:CanSeeFootsteps()
 	return self:Alive() and self:IsTerror() and self:HasWeapon("weapon_ttt2_lens")
 end
 
+function plymeta:CanSeeFootblood(target)
+	if not self:CanSeeFootsteps() or not IsValid(target) or not target:IsPlayer() then
+		return false
+	end
+
+	local isKiller = target.snifferIsKiller
+	if isKiller then
+		isKiller = isKiller + GetGlobalInt("ttt2_snif_footblood_lifetime", 0) >= CurTime()
+
+		if not isKiller then
+			target.snifferIsKiller = nil
+		end
+	end
+
+	return isKiller or false
+end
+
+hook.Add("TTTPrepareRound", "TTT2SnifClearAllFootsteps", function()
+	for _, v in ipairs(player.GetAll()) do
+		v.snifferIsKiller = nil
+	end
+end)
+
 local hook_installed = CLIENT and (hook_installed or false)
 
 if SERVER then
@@ -154,21 +179,68 @@ if SERVER then
 			end
 		end
 
+		local inBloodTime = false
+
+		if ply.snifferBloody then
+			inBloodTime = ply.snifferBloody + GetGlobalInt("ttt2_snif_footblood_lifetime") >= CurTime()
+
+			if not inBloodTime then
+				ply.snifferBloody = nil
+			end
+		end
+
 		net.Start("addFootstep")
 		net.WriteVector(pos)
 		net.WriteAngle(ply:GetForward():Angle())
 		net.WriteBool(foot == 1)
+		net.WriteBool(inBloodTime)
 		net.WriteEntity(ply)
 		net.Send(plys)
 	end)
 
 	hook.Add("TTTPrepareRound", "TTT2SnifClearAllFootsteps", function()
+		for _, v in ipairs(player.GetAll()) do
+			v.snifferBloody = nil
+			v.snifferKilled = nil
+		end
+
 		net.Start("clearAllFootsteps")
 		net.Broadcast()
 	end)
 
 	hook.Add("TTT2SyncGlobals", "SyncSnifferGlobals", function()
 		SetGlobalInt("ttt2_snif_footsteps_lifetime", CreateConVar("ttt2_snif_footsteps_lifetime", 15, {FCVAR_NOTIFY, FCVAR_ARCHIVE}):GetInt())
+		SetGlobalInt("ttt2_snif_footblood_lifetime", CreateConVar("ttt2_snif_footblood_lifetime", 30, {FCVAR_NOTIFY, FCVAR_ARCHIVE}):GetInt())
+	end)
+
+	cvars.AddChangeCallback("ttt2_snif_footsteps_lifetime", function(name, old, new)
+		SetGlobalInt(name, tonumber(new))
+	end, "ttt2_snif_footsteps_lifetime")
+
+	cvars.AddChangeCallback("ttt2_snif_footblood_lifetime", function(name, old, new)
+		SetGlobalInt(name, tonumber(new))
+	end, "ttt2_snif_footblood_lifetime")
+
+	hook.Add("TTT2PostPlayerDeath", "TTT2SnifferBloodMarker", function(victim, infl, attacker)
+		victim.snifferKilled = nil
+
+		if IsValid(attacker) and attacker:IsPlayer() then
+			attacker.snifferBloody = CurTime()
+			victim.snifferKilled = attacker
+		end
+	end
+
+	hook.Add("TTTBodyFound", "TTT2SnifferRegisterBlood", function(finder, deadply)
+		if IsValid(deadply) and deadply.snifferKilled then
+			local killer = deadply.snifferKilled
+
+			killer.snifferIsKiller = killer.snifferBloody
+
+			net.Start("TTT2SnifferSendKiller")
+			net.WriteEntity(killer)
+			net.WriteUInt(32, killer.snifferIsKiller)
+			net.Broadcast()
+		end
 	end)
 
 	function SWEP:Deploy()
@@ -179,9 +251,12 @@ if SERVER then
 		end
 	end
 else
+	local footbloodMat = Material("vgui/ttt/footblood")
 	local footstepMat = Material("vgui/ttt/footstep")
 	local maxDistance = 360000
 	local footsteps = {}
+	local footSize = 12
+	local bloodcolor = Color(180, 21, 21)
 
 	-- improved and modified code of https:--github.com/MechanicalMind/murder/blob/master/gamemode/cl_footsteps.lua
 	local function DrawFootsteps()
@@ -191,12 +266,34 @@ else
 
 		cam.Start3D(EyePos(), EyeAngles())
 
+		local drawTable = {}
+
+		for _, footstep in pairs(footsteps) do
+			if (footstep.pos - EyePos()):LengthSqr() < maxDistance then
+				drawTable[#drawTable + 1] = {
+					p = footstep.pos + footstep.normal * 0.01,
+					n = footstep.normal,
+					f = footstep.foot,
+					h = footSize,
+					c = footstep.col,
+					r = footstep.angle,
+					b = footstep.bloody
+				}
+			end
+		end
+
+		render.SetMaterial(footbloodMat)
+
+		for _, v in ipairs(drawTable) do
+			if v.b and client:CanSeeFootblood() then
+				render.DrawQuadEasy(v.p, v.n, v.f and -(v.h) or v.h, v.h, bloodcolor, v.r)
+			end
+		end
+
 		render.SetMaterial(footstepMat)
 
-		for k, footstep in pairs(footsteps) do
-			if (footstep.pos - EyePos()):LengthSqr() < maxDistance then
-				render.DrawQuadEasy(footstep.pos + footstep.normal * 0.01, footstep.normal, footstep.foot and -10 or 10, 20, footstep.col, footstep.angle)
-			end
+		for _, v in ipairs(drawTable) do
+			render.DrawQuadEasy(v.p, v.n, v.f and (v.h * -0.5) or (v.h * 0.5), v.h, v.c, v.r)
 		end
 
 		cam.End3D()
@@ -248,10 +345,20 @@ else
 		self:Holster()
 	end
 
+	net.Receive("TTT2SnifferSendKiller", function()
+		local killer = net.ReadEntity()
+		local timestamp = net.ReadUInt(32)
+
+		if not IsValid(killer) then return end
+
+		killer.snifferIsKiller = timestamp
+	end)
+
 	net.Receive("addFootstep", function()
 		local pos = net.ReadVector()
 		local ang = net.ReadAngle()
 		local foot = net.ReadBool()
+		local bloody = net.ReadBool()
 		local ply = net.ReadEntity()
 
 		if not IsValid(ply) then return end
@@ -277,6 +384,7 @@ else
 		tbl.angle = ang.y
 		tbl.normal = tr.HitNormal
 		tbl.col = ply:GetRoleColor()
+		tbl.bloody = bloody
 
 		footsteps[#footsteps + 1] = tbl
 	end)
