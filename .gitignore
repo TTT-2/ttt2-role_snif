@@ -39,3 +39,6 @@ luac.out
 *.x86_64
 *.hex
 
+# custom
+addon.json
+ttt2-role_snif.*
