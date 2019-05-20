@@ -215,7 +215,7 @@ if SERVER then
 		net.Send(plys)
 	end)
 
-	hook.Add("TTTPrepareRound", "TTT2SnifClearAllFootsteps", function()
+	hook.Add("TTTPrepareRound", "TTT2SvSnifClearAllFootsteps", function()
 		for _, v in ipairs(player.GetAll()) do
 			v.snifferBloody = nil
 			v.snifferKilled = nil
@@ -251,12 +251,14 @@ if SERVER then
 		if IsValid(deadply) and deadply.snifferKilled then
 			local killer = deadply.snifferKilled
 
-			killer.snifferIsKiller = killer.snifferBloody
+			if IsValid(killer) and killer.snifferBloody then
+				killer.snifferIsKiller = killer.snifferBloody
 
-			net.Start("TTT2SnifferSendKiller")
-			net.WriteEntity(killer)
-			net.WriteUInt(32, killer.snifferIsKiller)
-			net.Broadcast()
+				net.Start("TTT2SnifferSendKiller")
+				net.WriteEntity(killer)
+				net.WriteUInt(32, killer.snifferIsKiller)
+				net.Broadcast()
+			end
 		end
 	end)
 
