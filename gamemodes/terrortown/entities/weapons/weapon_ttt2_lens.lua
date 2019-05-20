@@ -320,7 +320,7 @@ else
 		render.SetMaterial(footbloodMat)
 
 		for _, v in ipairs(drawTable) do
-			if v.b and client:CanSeeFootblood() then
+			if v.b then
 				render.DrawQuadEasy(v.p, v.n, v.f and -(v.h) or v.h, v.h, bloodcolor, v.r)
 			end
 		end
