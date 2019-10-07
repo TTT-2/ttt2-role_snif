@@ -57,7 +57,7 @@ function ROLE:Initialize()
 		LANG.AddToLanguage("Deutsch", "target_" .. self.name, "Sniffer")
 		LANG.AddToLanguage("Deutsch", "ttt2_desc_" .. self.name, [[Der Sniffer ist ein Detektiv (der mit den anderen Detektiv-Rollen zusammenarbeitet)]])
 	end
-end)
+end
 
 if SERVER then
 	hook.Add("TTT2UpdateSubrole", "TTT2SnifGiveLens", function(ply, old, new)
