@@ -36,8 +36,7 @@ function ROLE:Initialize()
 	roles.SetBaseRole(self, ROLE_DETECTIVE)
 	
 	if CLIENT then
-		-- setup here is not necessary but if you want to access the role data, you need to start here
-		-- setup basic translation !
+		-- Role specific language elements
 		LANG.AddToLanguage("English", self.name, "Sniffer")
 		LANG.AddToLanguage("English", "info_popup_" .. self.name, [[You are a Sniffer!
 	Try to get some credits!]])
@@ -46,9 +45,6 @@ function ROLE:Initialize()
 		LANG.AddToLanguage("English", "target_" .. self.name, "Sniffer")
 		LANG.AddToLanguage("English", "ttt2_desc_" .. self.name, [[The Sniffer is a Detective (who works together with the other detectives)]])
 
-		---------------------------------
-
-		-- maybe this language as well...
 		LANG.AddToLanguage("Deutsch", self.name, "Sniffer")
 		LANG.AddToLanguage("Deutsch", "info_popup_" .. self.name, [[Du bist ein Sniffer!
 	Versuche ein paar Credits zu bekommen!]])
@@ -60,11 +56,13 @@ function ROLE:Initialize()
 end
 
 if SERVER then
-	hook.Add("TTT2UpdateSubrole", "TTT2SnifGiveLens", function(ply, old, new)
-		if new == ROLE_SNIFFER then
-			ply:GiveEquipmentWeapon("weapon_ttt2_lens")
-		elseif old == ROLE_SNIFFER then
-			ply:StripWeapon("weapon_ttt2_lens")
-		end
-	end)
+	-- Give Loadout on respawn and rolechange	
+	function ROLE:GiveRoleLoadout(ply, isRoleChange)
+		ply:GiveEquipmentWeapon('weapon_ttt2_lens')
+	end
+
+	-- Remove Loadout on death and rolechange
+	function ROLE:RemoveRoleLoadout(ply, isRoleChange)
+		ply:StripWeapon('weapon_ttt2_lens')
+	end
 end
