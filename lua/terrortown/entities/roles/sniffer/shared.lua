@@ -5,14 +5,13 @@ end
 
 function ROLE:PreInitialize()
 	self.color = Color(81, 123, 226, 255)
-	self.dkcolor = Color(17, 69, 200, 255)
-	self.bgcolor = Color(255, 157, 72, 255)
+
 	self.abbr = "snif"
 	self.scoreKillsMultiplier = 1
 	self.scoreTeamKillsMultiplier = -8
 	self.fallbackTable = {}
 	self.unknownTeam = true
-	
+
 	self.defaultTeam = TEAM_INNOCENT
 	self.defaultEquipment = SPECIAL_EQUIPMENT
 
@@ -34,7 +33,7 @@ end
 
 function ROLE:Initialize()
 	roles.SetBaseRole(self, ROLE_DETECTIVE)
-	
+
 	if CLIENT then
 		-- Role specific language elements
 		LANG.AddToLanguage("English", self.name, "Sniffer")
@@ -56,7 +55,7 @@ function ROLE:Initialize()
 end
 
 if SERVER then
-	-- Give Loadout on respawn and rolechange	
+	-- Give Loadout on respawn and rolechange
 	function ROLE:GiveRoleLoadout(ply, isRoleChange)
 		ply:GiveEquipmentWeapon("weapon_ttt2_lens")
 	end

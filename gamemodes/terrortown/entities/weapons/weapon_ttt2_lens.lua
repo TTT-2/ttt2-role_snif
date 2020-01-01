@@ -48,8 +48,8 @@ if CLIENT then
 	SWEP.DrawCrosshair = false
 
 	SWEP.EquipMenuData = {
-		type  = "item_weapon",
-	  	desc  = "You are able to see footsteps!"
+		type = "item_weapon",
+		desc = "You are able to see footsteps!"
 	}
 
 	SWEP.ViewModelBoneMods = {
@@ -135,11 +135,11 @@ end
 SWEP.AllowDrop = false
 
 function SWEP:OnDrop()
-    self:Remove()
+	self:Remove()
 end
 
 function SWEP:ShouldDropOnDie()
-    return false
+	return false
 end
 
 --------------------
@@ -321,7 +321,7 @@ else
 
 		for _, v in ipairs(drawTable) do
 			if v.b then
-				render.DrawQuadEasy(v.p, v.n, v.f and -(v.h) or v.h, v.h, bloodcolor, v.r)
+				render.DrawQuadEasy(v.p, v.n, v.f and - v.h or v.h, v.h, bloodcolor, v.r)
 			end
 		end
 
