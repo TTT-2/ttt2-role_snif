@@ -43,6 +43,14 @@ function ROLE:Initialize()
 		LANG.AddToLanguage("English", "search_role_" .. self.abbr, "This person was a Sniffer!")
 		LANG.AddToLanguage("English", "target_" .. self.name, "Sniffer")
 		LANG.AddToLanguage("English", "ttt2_desc_" .. self.name, [[The Sniffer is a Detective (who works together with the other detectives)]])
+		
+		LANG.AddToLanguage("Italian", self.name, "Segugio")
+		LANG.AddToLanguage("Italian", "info_popup_" .. self.name, [[Sei un Segugio!
+	Prova a prendere dei crediti!]])
+		LANG.AddToLanguage("Italian", "body_found_" .. self.abbr, "Era un Segugio.")
+		LANG.AddToLanguage("Italian", "search_role_" .. self.abbr, "Questa persona era un Segugio!")
+		LANG.AddToLanguage("Italian", "target_" .. self.name, "Segugio")
+		LANG.AddToLanguage("Italian", "ttt2_desc_" .. self.name, [[Il Segugio è un Detective (che collabora con gli altri Detective)]])
 
 		LANG.AddToLanguage("Deutsch", self.name, "Sniffer")
 		LANG.AddToLanguage("Deutsch", "info_popup_" .. self.name, [[Du bist ein Sniffer!
