@@ -44,13 +44,13 @@ function ROLE:Initialize()
 		LANG.AddToLanguage("English", "target_" .. self.name, "Sniffer")
 		LANG.AddToLanguage("English", "ttt2_desc_" .. self.name, [[The Sniffer is a Detective (who works together with the other detectives)]])
 		
-		LANG.AddToLanguage("Italiano", self.name, "Segugio")
-		LANG.AddToLanguage("Italiano", "info_popup_" .. self.name, [[Sei un Segugio!
+		LANG.AddToLanguage("Italiano", self.name, "Sniffer")
+		LANG.AddToLanguage("Italiano", "info_popup_" .. self.name, [[Sei uno Sniffer!
 	Prova a prendere dei crediti!]])
-		LANG.AddToLanguage("Italiano", "body_found_" .. self.abbr, "Era un Segugio.")
-		LANG.AddToLanguage("Italiano", "search_role_" .. self.abbr, "Questa persona era un Segugio!")
-		LANG.AddToLanguage("Italiano", "target_" .. self.name, "Segugio")
-		LANG.AddToLanguage("Italiano", "ttt2_desc_" .. self.name, [[Il Segugio è un Detective (che collabora con gli altri Detective)]])
+		LANG.AddToLanguage("Italiano", "body_found_" .. self.abbr, "Era uno Sniffer.")
+		LANG.AddToLanguage("Italiano", "search_role_" .. self.abbr, "Questa persona era uno Sniffer!")
+		LANG.AddToLanguage("Italiano", "target_" .. self.name, "Sniffer")
+		LANG.AddToLanguage("Italiano", "ttt2_desc_" .. self.name, [[Lo Sniffer è un Detective (che collabora con gli altri Detective)]])
 
 		LANG.AddToLanguage("Deutsch", self.name, "Sniffer")
 		LANG.AddToLanguage("Deutsch", "info_popup_" .. self.name, [[Du bist ein Sniffer!
