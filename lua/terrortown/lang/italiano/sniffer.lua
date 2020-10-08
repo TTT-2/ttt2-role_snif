@@ -1,10 +1,10 @@
 local L = LANG.GetLanguageTableReference("italiano")
 
 -- GENERAL ROLE LANGUAGE STRINGS
-L[SNIFFER.name] = "Sniffer"
-L["info_popup_" .. SNIFFER.name] = [[Sei uno Sniffer!
+L[SNIFFER.name] = "Segugio"
+L["info_popup_" .. SNIFFER.name] = [[Sei uno Segugio!
 Prova a prendere dei crediti!]]
-L["body_found_" .. SNIFFER.abbr] = "Era uno Sniffer."
-L["search_role_" .. SNIFFER.abbr] = "Questa persona era uno Sniffer!"
-L["target_" .. SNIFFER.name] = "Sniffer"
-L["ttt2_desc_" .. SNIFFER.name] = [[Lo Sniffer è un Detective (che collabora con gli altri Detective)]]
+L["body_found_" .. SNIFFER.abbr] = "Era un Segugio."
+L["search_role_" .. SNIFFER.abbr] = "Questa persona era un Segugio!"
+L["target_" .. SNIFFER.name] = "Segugio"
+L["ttt2_desc_" .. SNIFFER.name] = [[Il Segugio è un Detective che visualizza le impronte (che collabora con gli altri Detective)]]
