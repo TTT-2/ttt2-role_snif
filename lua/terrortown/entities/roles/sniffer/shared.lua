@@ -7,8 +7,9 @@ function ROLE:PreInitialize()
 	self.color = Color(81, 123, 226, 255)
 
 	self.abbr = "snif"
-	self.scoreKillsMultiplier = 1
-	self.scoreTeamKillsMultiplier = -8
+	self.score.killsMultiplier = 8
+	self.score.teamKillsMultiplier = -8
+	self.score.bodyFoundMuliplier = 3
 	self.fallbackTable = {}
 	self.unknownTeam = true
 
