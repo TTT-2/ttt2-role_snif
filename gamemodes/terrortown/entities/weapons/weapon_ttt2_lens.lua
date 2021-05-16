@@ -419,7 +419,11 @@ else
 		tbl.curtime = CurTime()
 		tbl.angle = ang.y
 		tbl.normal = tr.HitNormal
-		tbl.col = ply:GetRoleColor()
+		if ply:GetSubRole() ~= ROLE_NONE then
+			tbl.col = ply:GetRoleColor()
+		else
+			tbl.col = Color(80, 173, 59, 255)
+		end
 		tbl.bloody = bloody
 
 		hook.Run("TTT2SnifferModifyFootstep", ply, tbl)
