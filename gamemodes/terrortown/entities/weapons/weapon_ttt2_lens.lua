@@ -422,7 +422,7 @@ else
 		if ply:GetSubRole() ~= ROLE_NONE then
 			tbl.col = ply:GetRoleColor()
 		else
-			tbl.col = INNOCENT.color
+			tbl.col = roles.INNOCENT.color
 		end
 		tbl.bloody = bloody
 
