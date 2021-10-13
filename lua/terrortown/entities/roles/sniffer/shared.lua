@@ -10,7 +10,6 @@ function ROLE:PreInitialize()
 	self.score.killsMultiplier = 8
 	self.score.teamKillsMultiplier = -8
 	self.score.bodyFoundMuliplier = 3
-	self.fallbackTable = {}
 	self.unknownTeam = true
 
 	self.defaultTeam = TEAM_INNOCENT
@@ -24,8 +23,8 @@ function ROLE:PreInitialize()
 		minKarma = 600,
 
 		credits = 1,
-		creditsTraitorKill = 0,
-		creditsTraitorDead = 1,
+		creditsAwardDeadEnable = 1,
+		creditsAwardKillEnable = 0,
 
 		togglable = true,
 		shopFallback = SHOP_FALLBACK_DETECTIVE
