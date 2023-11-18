@@ -1,0 +1,7 @@
+"VertexLitGeneric" 
+{ 
+
+"$baseTexture" "models\magni/magni_glass" 
+"$vertexcolor" 1
+"$vertexalpha" 1
+} 

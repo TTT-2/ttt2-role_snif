@@ -1,6 +1,8 @@
 -- Lens created by Alf21
 -- magnifying glass model by https://gamebanana.com/skins/13032 (by magNet) -> models/magni/magniglass.mdl
 -- made with the help of https://facepunch.com/threads/1032378 (by Clavus)
+-- code un-SWEP-construction-kitted by EntranceJew
+-- magnifying glass viewmodel by Matsilagi
 
 DEFINE_BASECLASS "weapon_tttbase"
 
@@ -11,6 +13,7 @@ if SERVER then
 	resource.AddFile("materials/models/magni/magni_sheet.vmt")
 	resource.AddFile("materials/vgui/ttt/footstep.vmt")
 	resource.AddFile("materials/vgui/ttt/footblood.vmt")
+	resource.AddFile("materials/vgui/ttt/icon_weapon_ttt2_lens.vmt")
 
 	-- models
 	resource.AddFile("models/magni/magniglass.mdl")
@@ -22,8 +25,6 @@ if SERVER then
 	util.AddNetworkString("addFootstep")
 	util.AddNetworkString("clearAllFootsteps")
 	util.AddNetworkString("TTT2SnifferSendKiller")
-
-	CreateConVar("ttt2_snif_lens_sound", 1, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 end
 
 sound.Add({
@@ -33,6 +34,11 @@ sound.Add({
 	level = 80,
 	sound = "ttt2/footsteps.mp3"
 })
+
+local flags = {FCVAR_NOTIFY, FCVAR_ARCHIVE, FCVAR_REPLICATED}
+local cvFootstepsLifetime = CreateConVar("ttt2_snif_footsteps_lifetime", "15", flags)
+local cvFootbloodLifetime = CreateConVar("ttt2_snif_footblood_lifetime", "30", flags)
+local cvLensSound = CreateConVar("ttt2_snif_lens_sound", "1", flags)
 
 ------------
 -- SWEP data
@@ -52,58 +58,16 @@ if CLIENT then
 		desc = "You are able to see footsteps!"
 	}
 
-	SWEP.ViewModelBoneMods = {
-		["shuriken"] = {
-			scale = Vector(0.009, 0.009, 0.009),
-			pos = Vector(0, 6.48, 0),
-			angle = Angle(0, 0, 0)
-		}
-	}
-
-	SWEP.VElements = {
-		["magniglass"] = {
-			type = "Model",
-			model = "models/magni/magniglass.mdl",
-			bone = "shuriken",
-			rel = "",
-			pos = Vector(-1, 10, 0),
-			angle = Angle(-30, 135, 50),
-			size = Vector(0.69, 0.69, 0.69),
-			color = Color(255, 255, 255, 255),
-			surpresslightning = false,
-			material = "",
-			skin = 0,
-			bodygroup = {}
-		}
-	}
-
-	SWEP.WElements = {
-		["magniglass"] = {
-			type = "Model",
-			model = "models/magni/magniglass.mdl",
-			bone = "ValveBiped.Bip01_R_Hand",
-			rel = "",
-			--x, runter
-			pos = Vector(4, 3, -3),
-			angle = Angle(110, -45, -130),
-			size = Vector(0.69, 0.69, 0.69),
-			color = Color(255, 255, 255, 255),
-			surpresslightning = false,
-			material = "",
-			skin = 0,
-			bodygroup = {}
-		}
-	}
-
-	SWEP.Icon = "vgui/ttt/icon_binoc" -- TODO: yea we need a new icon
+	SWEP.Icon = "vgui/ttt/icon_weapon_ttt2_lens"
 end
 
 SWEP.Base = "weapon_tttbase"
 
-SWEP.ViewModel = "models/magni/v_shuriken.mdl"
+SWEP.ViewModel = "models/weapons/c_magni.mdl"
 SWEP.WorldModel = "models/magni/magniglass.mdl"
 SWEP.ShowViewModel = true
 SWEP.ShowWorldModel = true
+SWEP.UseHands = true
 
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
@@ -121,25 +85,18 @@ SWEP.Kind = WEAPON_EQUIP2
 SWEP.CanBuy = {} -- no one can buy
 SWEP.notBuyable	= true -- no one can buy
 
+SWEP.IronSightsPos = Vector(-5.4, -18, 1.9)
+SWEP.IronSightsAng = Vector(0, 0, 0)
+
 -- don't do anything
 function SWEP:PrimaryAttack()
 
 end
 
--- don't do anything
-function SWEP:SecondaryAttack()
-
-end
-
--- disable drop
-SWEP.AllowDrop = false
-
-function SWEP:OnDrop()
-	self:Remove()
-end
+SWEP.AllowDrop = true
 
 function SWEP:ShouldDropOnDie()
-	return false
+	return true
 end
 
 --------------------
@@ -149,7 +106,7 @@ local plymeta = FindMetaTable("Player")
 if not plymeta then return end
 
 function plymeta:CanSeeFootsteps()
-	return self:Alive() and self:IsTerror() and self:HasWeapon("weapon_ttt2_lens")
+	return self:Alive() and self:IsTerror() and self:GetActiveWeapon() and self:GetActiveWeapon():GetClass() == "weapon_ttt2_lens" and self:GetActiveWeapon():GetIronsights()
 end
 
 function plymeta:CanSeeFootblood(target)
@@ -159,7 +116,7 @@ function plymeta:CanSeeFootblood(target)
 
 	local isKiller = target.snifferIsKiller
 	if isKiller then
-		isKiller = isKiller + GetGlobalInt("ttt2_snif_footblood_lifetime", 0) >= CurTime()
+		isKiller = isKiller + cvFootbloodLifetime:GetInt() >= CurTime()
 
 		if not isKiller then
 			target.snifferIsKiller = nil
@@ -190,7 +147,7 @@ if SERVER then
 		local inBloodTime = false
 
 		if ply.snifferBloody then
-			inBloodTime = ply.snifferBloody + GetGlobalInt("ttt2_snif_footblood_lifetime") >= CurTime()
+			inBloodTime = ply.snifferBloody + cvFootstepsLifetime:GetInt() >= CurTime()
 
 			if not inBloodTime then
 				ply.snifferBloody = nil
@@ -225,19 +182,6 @@ if SERVER then
 		net.Broadcast()
 	end)
 
-	hook.Add("TTT2SyncGlobals", "SyncSnifferGlobals", function()
-		SetGlobalInt("ttt2_snif_footsteps_lifetime", CreateConVar("ttt2_snif_footsteps_lifetime", 15, {FCVAR_NOTIFY, FCVAR_ARCHIVE}):GetInt())
-		SetGlobalInt("ttt2_snif_footblood_lifetime", CreateConVar("ttt2_snif_footblood_lifetime", 30, {FCVAR_NOTIFY, FCVAR_ARCHIVE}):GetInt())
-	end)
-
-	cvars.AddChangeCallback("ttt2_snif_footsteps_lifetime", function(name, old, new)
-		SetGlobalInt(name, tonumber(new))
-	end, "ttt2_snif_footsteps_lifetime")
-
-	cvars.AddChangeCallback("ttt2_snif_footblood_lifetime", function(name, old, new)
-		SetGlobalInt(name, tonumber(new))
-	end, "ttt2_snif_footblood_lifetime")
-
 	hook.Add("TTT2PostPlayerDeath", "TTT2SnifferBloodMarker", function(victim, infl, attacker)
 		victim.snifferKilled = nil
 
@@ -266,12 +210,17 @@ if SERVER then
 		local owner = self:GetOwner()
 
 		if IsValid(owner) and owner:Alive() and owner:IsTerror() then
-			if not GetConVar("ttt2_snif_lens_sound"):GetBool() or math.random(1, 5) ~= 1 then return end
+			if not cvLensSound:GetBool() or math.random(1, 5) ~= 1 then return end
 
 			owner:EmitSound("ttt2_sniffer_haefootsteps")
 		end
 
-		return BaseClass.Deploy(self)
+		local r = BaseClass.Deploy(self)
+
+		local irons = self:GetIronsights()
+		self:SyncIrons(irons)
+
+		return r
 	end
 
 	function SWEP:Holster()
@@ -283,7 +232,16 @@ if SERVER then
 			owner:StopSound("ttt2_sniffer_haefootsteps")
 		end
 
-		return BaseClass.Holster(self)
+		local r = BaseClass.Holster(self)
+
+		local irons = self:GetIronsights()
+		self:SyncIrons(irons)
+
+		return r
+	end
+
+	function SWEP:ShowFootPrints(show)
+
 	end
 else
 	local footbloodMat = Material("vgui/ttt/footblood")
@@ -294,7 +252,7 @@ else
 	local bloodcolor = Color(180, 21, 21)
 
 	-- improved and modified code of https:--github.com/MechanicalMind/murder/blob/master/gamemode/cl_footsteps.lua
-	local function DrawFootsteps()
+	SWEP.DrawFootsteps = function()
 		local client = LocalPlayer()
 
 		if not client:CanSeeFootsteps() then return end
@@ -334,8 +292,8 @@ else
 		cam.End3D()
 	end
 
-	local function UpdateFootsteps()
-		local lifeTime = math.Clamp(GetGlobalInt("ttt2_snif_footsteps_lifetime"), 0, 30)
+	SWEP.UpdateFootsteps = function()
+		local lifeTime = math.Clamp(GetConVar("ttt2_snif_footsteps_lifetime"):GetInt(), 0, 30)
 
 		for k, footstep in pairs(footsteps) do
 			if footstep.curtime + lifeTime < CurTime() then
@@ -344,40 +302,27 @@ else
 		end
 	end
 
-	-- performance improvements
-	function SWEP:Deploy()
+	function SWEP:ShowFootPrints(show)
 		local owner = self:GetOwner()
-
-		if not hook_installed and IsValid(owner) and owner == LocalPlayer() and owner:Alive() and owner:IsTerror() then
-			hook.Add("PostDrawTranslucentRenderables", "TTT2SnifDrawFootSteps", DrawFootsteps)
-			hook.Add("Think", "TTT2UpdateFootsteps", UpdateFootsteps)
-
-			hook_installed = true
-		end
-
-		return BaseClass.Deploy(self)
-	end
-
-	function SWEP:Holster()
-		local owner = self:GetOwner()
-
 		if not IsValid(owner) then
 			return true
 		end
 
-		if hook_installed and owner == LocalPlayer() then
-			hook.Remove("PostDrawTranslucentRenderables", "TTT2SnifDrawFootSteps")
-			hook.Remove("Think", "TTT2UpdateFootsteps")
+		if show then
+			if not hook_installed and IsValid(owner) and owner == LocalPlayer() and owner:Alive() and owner:IsTerror() then
+				hook.Add("PostDrawTranslucentRenderables", "TTT2SnifDrawFootSteps", self.DrawFootsteps)
+				hook.Add("Think", "TTT2UpdateFootsteps", self.UpdateFootsteps)
 
-			hook_installed = false
+				hook_installed = true
+			end
+		else
+			if hook_installed and owner == LocalPlayer() then
+				hook.Remove("PostDrawTranslucentRenderables", "TTT2SnifDrawFootSteps")
+				hook.Remove("Think", "TTT2UpdateFootsteps")
+
+				hook_installed = false
+			end
 		end
-
-		local vm = owner:GetViewModel()
-		if IsValid(vm) then
-			self:ResetBonePositions(vm)
-		end
-
-		return BaseClass.Holster(self)
 	end
 
 	net.Receive("TTT2SnifferSendKiller", function()
@@ -436,495 +381,76 @@ else
 	end)
 end
 
+LENS_MODE_FISHEYE = 0
+LENS_MODE_GLASS = 1
+LENS_MODE_NONE = 2
+
+function SWEP:SetLensType(lens_mode)
+	local owner = self:GetOwner()
+	if not owner or not owner.GetViewModel then return end
+	local vm = owner:GetViewModel()
+	vm:SetBodygroup(1, lens_mode)
+end
+
 function SWEP:OnRemove()
 	self:Holster()
 
 	BaseClass.OnRemove(self)
 end
 
---[[----------------------------------------------------
-	SWEP Construction Kit base code
-		Created by Clavus
-	Available for public use, thread at:
-	   facepunch.com/threads/1032378
-
-
-	DESCRIPTION:
-		This script is meant for experienced scripters
-		that KNOW WHAT THEY ARE DOING. Don't come to me
-		with basic Lua questions.
-
-		Just copy into your SWEP or SWEP base of choice
-		and merge with your own code.
-
-		The SWEP.VElements, SWEP.WElements and
-		SWEP.ViewModelBoneMods tables are all optional
-		and only have to be visible to the client.
-------------------------------------------------------]]
-
--- World-/Viewmodel handling
-function SWEP:GetViewModelPosition(pos, ang)
-	pos = pos + ang:Forward() * 5.48
-	pos = pos + ang:Right() * 2.68
-	pos = pos + ang:Up() * 1.96
-
-	return pos, ang
+function SWEP:SyncIrons(irons)
+	if irons then
+		self:SetLensType(LENS_MODE_GLASS)
+		self:ShowFootPrints(true)
+	else
+		self:SetLensType(LENS_MODE_FISHEYE)
+		self:ShowFootPrints(false)
+	end
+	self:SetIronsights(irons)
+	self:SetZoom(irons)
 end
 
------------------------------------------
--- and now, let's create a nice viewmodel
-function SWEP:Initialize()
-	if CLIENT then
-		-- Create a new table for every weapon instance
-		self.VElements = table.FullCopy(self.VElements)
-		self.WElements = table.FullCopy(self.WElements)
-		self.ViewModelBoneMods = table.FullCopy(self.ViewModelBoneMods)
+-- don't do anything
+function SWEP:SecondaryAttack()
+	local r = BaseClass.SecondaryAttack(self)
+	local irons = self:GetIronsights()
+	self:SyncIrons(irons)
 
-		self:CreateModels(self.VElements) -- create viewmodels
-		self:CreateModels(self.WElements) -- create worldmodels
-
-		-- init view model bone build function
-		if IsValid(self.Owner) then
-			local vm = self.Owner:GetViewModel()
-			if IsValid(vm) then
-				self:ResetBonePositions(vm)
-
-				-- Init viewmodel visibility
-				if self.ShowViewModel == nil or self.ShowViewModel then
-					vm:SetColor(Color(255, 255, 255, 255))
-				else
-					-- we set the alpha to 1 instead of 0 because else ViewModelDrawn stops being called
-					vm:SetColor(Color(255, 255, 255, 1))
-					-- ^ stopped working in GMod 13 because you have to do Entity:SetRenderMode(1) for translucency to kick in
-					-- however for some reason the view model resets to render mode 0 every frame so we just apply a debug material to prevent it from drawing
-					vm:SetMaterial("Debug/hsv")
-				end
-			end
-		end
-	end
+	return r
 end
 
 if CLIENT then
-	SWEP.vRenderOrder = nil
-
-	function SWEP:ViewModelDrawn()
-		local vm = self.Owner:GetViewModel()
-		if not IsValid(vm) or not self.VElements then return end
-
-		self:UpdateBonePositions(vm)
-
-		if not self.vRenderOrder then
-
-			-- we build a render order because sprites need to be drawn after models
-			self.vRenderOrder = {}
-
-			for k, v in pairs(self.VElements) do
-				if v.type == "Model" then
-					table.insert(self.vRenderOrder, 1, k)
-				elseif v.type == "Sprite" or v.type == "Quad" then
-					table.insert(self.vRenderOrder, k)
-				end
-			end
-		end
-
-		for k, name in ipairs(self.vRenderOrder) do
-			local v = self.VElements[name]
-			if not v then
-				self.vRenderOrder = nil
-
-				break
-			end
-
-			if v.hide then continue end
-
-			local model = v.modelEnt
-			local sprite = v.spriteMaterial
-
-			if not v.bone then continue end
-
-			local pos, ang = self:GetBoneOrientation(self.VElements, v, vm)
-
-			if not pos then continue end
-
-			if v.type == "Model" and IsValid(model) then
-				model:SetPos(pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z)
-
-				ang:RotateAroundAxis(ang:Up(), v.angle.y)
-				ang:RotateAroundAxis(ang:Right(), v.angle.p)
-				ang:RotateAroundAxis(ang:Forward(), v.angle.r)
-
-				model:SetAngles(ang)
-				--model:SetModelScale(v.size)
-
-				local matrix = Matrix()
-				matrix:Scale(v.size)
-
-				model:EnableMatrix("RenderMultiply", matrix)
-
-				if v.material == "" then
-					model:SetMaterial("")
-				elseif model:GetMaterial() ~= v.material then
-					model:SetMaterial(v.material)
-				end
-
-				if v.skin and v.skin ~= model:GetSkin() then
-					model:SetSkin(v.skin)
-				end
-
-				if v.bodygroup then
-					for k, v in pairs(v.bodygroup) do
-						if model:GetBodygroup(k) ~= v then
-							model:SetBodygroup(k, v)
-						end
-					end
-				end
-
-				if v.surpresslightning then
-					render.SuppressEngineLighting(true)
-				end
-
-				render.SetColorModulation(v.color.r / 255, v.color.g / 255, v.color.b / 255)
-				render.SetBlend(v.color.a / 255)
-
-				model:DrawModel()
-
-				render.SetBlend(1)
-				render.SetColorModulation(1, 1, 1)
-
-				if v.surpresslightning then
-					render.SuppressEngineLighting(false)
-				end
-			elseif v.type == "Sprite" and sprite then
-				local drawpos = pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z
-
-				render.SetMaterial(sprite)
-				render.DrawSprite(drawpos, v.size.x, v.size.y, v.color)
-			elseif v.type == "Quad" and v.draw_func then
-				local drawpos = pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z
-
-				ang:RotateAroundAxis(ang:Up(), v.angle.y)
-				ang:RotateAroundAxis(ang:Right(), v.angle.p)
-				ang:RotateAroundAxis(ang:Forward(), v.angle.r)
-
-				cam.Start3D2D(drawpos, ang, v.size)
-
-				v.draw_func(self)
-
-				cam.End3D2D()
-			end
-		end
-	end
-
-	SWEP.wRenderOrder = nil
-
-	function SWEP:DrawWorldModel()
-		if not IsValid(self:GetOwner()) then
-			self:DrawModel()
-		end
-
-		if not self.WElements then return end
-
-		if not self.wRenderOrder then
-			self.wRenderOrder = {}
-
-			for k, v in pairs(self.WElements) do
-				if v.type == "Model" then
-					table.insert(self.wRenderOrder, 1, k)
-				elseif v.type == "Sprite" or v.type == "Quad" then
-					table.insert(self.wRenderOrder, k)
-				end
-			end
-		end
-
-		if IsValid(self.Owner) then
-			bone_ent = self.Owner
-		else
-			-- when the weapon is dropped
-			bone_ent = self
-		end
-
-		for _, name in pairs(self.wRenderOrder) do
-			local v = self.WElements[name]
-			if not v then
-				self.wRenderOrder = nil
-
-				break
-			end
-
-			if v.hide then continue end
-
-			local pos, ang
-
-			if v.bone then
-				pos, ang = self:GetBoneOrientation(self.WElements, v, bone_ent)
-			else
-				pos, ang = self:GetBoneOrientation(self.WElements, v, bone_ent, "ValveBiped.Bip01_R_Hand")
-			end
-
-			if not pos then continue end
-
-			local model = v.modelEnt
-			local sprite = v.spriteMaterial
-
-			if v.type == "Model" and IsValid(model) then
-				model:SetPos(pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z)
-
-				ang:RotateAroundAxis(ang:Up(), v.angle.y)
-				ang:RotateAroundAxis(ang:Right(), v.angle.p)
-				ang:RotateAroundAxis(ang:Forward(), v.angle.r)
-
-				model:SetAngles(ang)
-				--model:SetModelScale(v.size)
-
-				local matrix = Matrix()
-				matrix:Scale(v.size)
-
-				model:EnableMatrix("RenderMultiply", matrix)
-
-				if v.material == "" then
-					model:SetMaterial("")
-				elseif model:GetMaterial() ~= v.material then
-					model:SetMaterial(v.material)
-				end
-
-				if v.skin and v.skin ~= model:GetSkin() then
-					model:SetSkin(v.skin)
-				end
-
-				if v.bodygroup then
-					for k, v in pairs(v.bodygroup) do
-						if model:GetBodygroup(k) ~= v then
-							model:SetBodygroup(k, v)
-						end
-					end
-				end
-
-				if v.surpresslightning then
-					render.SuppressEngineLighting(true)
-				end
-
-				render.SetColorModulation(v.color.r / 255, v.color.g / 255, v.color.b / 255)
-				render.SetBlend(v.color.a / 255)
-
-				model:DrawModel()
-
-				render.SetBlend(1)
-				render.SetColorModulation(1, 1, 1)
-
-				if v.surpresslightning then
-					render.SuppressEngineLighting(false)
-				end
-			elseif v.type == "Sprite" and sprite then
-				local drawpos = pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z
-
-				render.SetMaterial(sprite)
-				render.DrawSprite(drawpos, v.size.x, v.size.y, v.color)
-			elseif v.type == "Quad" and v.draw_func then
-				local drawpos = pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z
-
-				ang:RotateAroundAxis(ang:Up(), v.angle.y)
-				ang:RotateAroundAxis(ang:Right(), v.angle.p)
-				ang:RotateAroundAxis(ang:Forward(), v.angle.r)
-
-				cam.Start3D2D(drawpos, ang, v.size)
-
-				v.draw_func(self)
-
-				cam.End3D2D()
-			end
-		end
-	end
-
-	function SWEP:GetBoneOrientation(basetab, tbl, ent, bone_override)
-		local bone, pos, ang
-
-		if tbl.rel and tbl.rel ~= "" then
-			local v = basetab[tbl.rel]
-			if not v then return end
-
-			-- Technically, if there exists an element with the same name as a bone
-			-- you can get in an infinite loop. Let's just hope nobody's that stupid.
-			pos, ang = self:GetBoneOrientation(basetab, v, ent)
-
-			if not pos then return end
-
-			pos = pos + ang:Forward() * v.pos.x + ang:Right() * v.pos.y + ang:Up() * v.pos.z
-
-			ang:RotateAroundAxis(ang:Up(), v.angle.y)
-			ang:RotateAroundAxis(ang:Right(), v.angle.p)
-			ang:RotateAroundAxis(ang:Forward(), v.angle.r)
-		else
-			bone = ent:LookupBone(bone_override or tbl.bone)
-
-			if not bone then return end
-
-			pos, ang = Vector(0, 0, 0), Angle(0, 0, 0)
-
-			local m = ent:GetBoneMatrix(bone)
-			if m then
-				pos, ang = m:GetTranslation(), m:GetAngles()
-			end
-
-			if IsValid(self.Owner) and self.Owner:IsPlayer() and ent == self.Owner:GetViewModel() and self.ViewModelFlip then
-				ang.r = -ang.r -- Fixes mirrored models
-			end
-
-		end
-
-		return pos, ang
-	end
-
-	function SWEP:CreateModels(tbl)
-		if not tbl then return end
-
-		-- Create the clientside models here because Garry says we can't do it in the render hook
-		for _, v in pairs(tbl) do
-			if v.type == "Model" and v.model and v.model ~= ""
-			and (not IsValid(v.modelEnt) or v.createdModel ~= v.model)
-			and string.find(v.model, ".mdl") and file.Exists(v.model, "GAME")
-			then
-				v.modelEnt = ClientsideModel(v.model, RENDER_GROUP_VIEW_MODEL_OPAQUE)
-
-				if IsValid(v.modelEnt) then
-					v.modelEnt:SetPos(self:GetPos())
-					v.modelEnt:SetAngles(self:GetAngles())
-					v.modelEnt:SetParent(self)
-					v.modelEnt:SetNoDraw(true)
-
-					v.createdModel = v.model
-				else
-					v.modelEnt = nil
-				end
-			elseif v.type == "Sprite" and v.sprite and v.sprite ~= ""
-			and (not v.spriteMaterial or v.createdSprite ~= v.sprite)
-			and file.Exists("materials/" .. v.sprite .. ".vmt", "GAME")
-			then
-				local name = v.sprite .. "-"
-				local params = {["$basetexture"] = v.sprite}
-
-				-- make sure we create a unique name based on the selected options
-				local tocheck = {"nocull", "additive", "vertexalpha", "vertexcolor", "ignorez"}
-				for i, j in pairs(tocheck) do
-					if v[j] then
-						params["$" .. j] = 1
-
-						name = name .. "1"
-					else
-						name = name .. "0"
-					end
-				end
-
-				v.createdSprite = v.sprite
-				v.spriteMaterial = CreateMaterial(name, "UnlitGeneric", params)
-			end
-		end
-	end
-
-	local allbones
-	local hasGarryFixedBoneScalingYet = false
-
-	function SWEP:UpdateBonePositions(vm)
-		if self.ViewModelBoneMods then
-			if not vm:GetBoneCount() then return end
-
-			-- !! WORKAROUND !! --
-			-- We need to check all model names :/
-			local loopthrough = self.ViewModelBoneMods
-
-			if not hasGarryFixedBoneScalingYet then
-				allbones = {}
-
-				for i = 0, vm:GetBoneCount() do
-					local bonename = vm:GetBoneName(i)
-
-					if self.ViewModelBoneMods[bonename] then
-						allbones[bonename] = self.ViewModelBoneMods[bonename]
-					else
-						allbones[bonename] = {
-							scale = Vector(1, 1, 1),
-							pos = Vector(0, 0, 0),
-							angle = Angle(0, 0, 0)
-						}
-					end
-				end
-
-				loopthrough = allbones
-			end
-			-- !! ----------- !! --
-
-			for k, v in pairs(loopthrough) do
-				local bone = vm:LookupBone(k)
-				if not bone then continue end
-
-				-- !! WORKAROUND !! --
-				local s = Vector(v.scale.x,v.scale.y,v.scale.z)
-				local p = Vector(v.pos.x,v.pos.y,v.pos.z)
-				local ms = Vector(1,1,1)
-				if not hasGarryFixedBoneScalingYet then
-					local cur = vm:GetBoneParent(bone)
-					while cur >= 0 do
-						local pscale = loopthrough[vm:GetBoneName(cur)].scale
-
-						ms = ms * pscale
-
-						cur = vm:GetBoneParent(cur)
-					end
-				end
-
-				s = s * ms
-				-- !! ----------- !! --
-
-				if vm:GetManipulateBoneScale(bone) ~= s then
-					vm:ManipulateBoneScale(bone, s)
-				end
-
-				if vm:GetManipulateBoneAngles(bone) ~= v.angle then
-					vm:ManipulateBoneAngles(bone, v.angle)
-				end
-
-				if vm:GetManipulateBonePosition(bone) ~= p then
-					vm:ManipulateBonePosition(bone, p)
-				end
-			end
-		else
-			self:ResetBonePositions(vm)
-		end
-	end
-
-	function SWEP:ResetBonePositions(vm)
-		if not vm:GetBoneCount() then return end
-
-		for i = 0, vm:GetBoneCount() do
-			vm:ManipulateBoneScale(i, Vector(1, 1, 1))
-			vm:ManipulateBoneAngles(i, Angle(0, 0, 0))
-			vm:ManipulateBonePosition(i, Vector(0, 0, 0))
-		end
-	end
-
-	--[[-----------------------
-		Global utility code
-	-------------------------]]
-
-	-- Fully copies the table, meaning all tables inside this table are copied too and so on (normal table.Copy copies only their reference).
-	-- Does not copy entities of course, only copies their reference.
-	-- WARNING: do not use on tables that contain themselves somewhere down the line or you'll get an infinite loop
-	function table.FullCopy(tbl)
-		if not tbl then return end
-
-		local res = {}
-
-		for k, v in pairs(tbl) do
-			if type(v) == "table" then
-				res[k] = table.FullCopy(v) -- recursion ho!
-			elseif type(v) == "Vector" then
-				res[k] = Vector(v.x, v.y, v.z)
-			elseif type(v) == "Angle" then
-				res[k] = Angle(v.p, v.y, v.r)
-			else
-				res[k] = v
-			end
-		end
-
-		return res
+	function SWEP:AddToSettingsMenu(parent)
+		local form = vgui.CreateTTT2Form(parent, "header_equipment_additional")
+
+		form:MakeHelp({
+			label = "help_ttt2_snif_footsteps_lifetime",
+		})
+		form:MakeSlider({
+			serverConvar = "ttt2_snif_footsteps_lifetime",
+			label = "label_ttt2_snif_footsteps_lifetime",
+			min = 0,
+			max = 300,
+			decimal = 0,
+		})
+
+		form:MakeHelp({
+			label = "help_ttt2_snif_footblood_lifetime",
+		})
+		form:MakeSlider({
+			serverConvar = "ttt2_snif_footblood_lifetime",
+			label = "label_ttt2_snif_footblood_lifetime",
+			min = 0,
+			max = 300,
+			decimal = 0,
+		})
+
+		form:MakeHelp({
+			label = "help_ttt2_snif_lens_sound",
+		})
+		form:MakeCheckBox({
+			serverConvar = "ttt2_snif_lens_sound",
+			label = "label_ttt2_snif_lens_sound",
+		})
 	end
 end
