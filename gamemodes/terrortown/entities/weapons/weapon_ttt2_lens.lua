@@ -106,7 +106,7 @@ local plymeta = FindMetaTable("Player")
 if not plymeta then return end
 
 function plymeta:CanSeeFootsteps()
-	return self:Alive() and self:IsTerror() and self:GetActiveWeapon() and self:GetActiveWeapon():GetClass() == "weapon_ttt2_lens" and self:GetActiveWeapon():GetIronsights()
+	return self:Alive() and self:IsTerror() and IsValid(self:GetActiveWeapon()) and self:GetActiveWeapon():GetClass() == "weapon_ttt2_lens" and self:GetActiveWeapon():GetIronsights()
 end
 
 function plymeta:CanSeeFootblood(target)
@@ -417,6 +417,12 @@ function SWEP:SecondaryAttack()
 	self:SyncIrons(irons)
 
 	return r
+end
+
+function SWEP:PreDrop()
+	self:SetIronsights(false)
+	self:SetZoom(false)
+	self:SyncIrons(false)
 end
 
 if CLIENT then
